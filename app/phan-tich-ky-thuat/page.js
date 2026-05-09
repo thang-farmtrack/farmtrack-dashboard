@@ -1,0 +1,625 @@
+'use client';
+import { useState, useMemo } from 'react';
+import FarmLayout from '@/components/FarmLayout';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, ReferenceLine,
+} from 'recharts';
+import { BREED_STANDARDS, getStd, interpolate, getCurveData, getPhase } from '@/lib/standards';
+
+// ══════════════════════════════════════════════════════════════
+// MOCK DATA — Nhà 6, Khu B, Maria, 300 ngày
+// ══════════════════════════════════════════════════════════════
+const HOUSES = {
+  B: Array.from({length:10},(_,i)=>({id:i+6,  label:`Nhà ${i+6}`,  birds:Math.floor(16000+Math.random()*5000), breed:'Maria',    entryDate:'15/07/2024', layStart:'15/11/2024', age:300})),
+  C: Array.from({length:8}, (_,i)=>({id:i+16, label:`Nhà ${i+16}`, birds:Math.floor(15000+Math.random()*5000), breed:'Borisu',   entryDate:'20/08/2024', layStart:'20/12/2024', age:260})),
+  D: Array.from({length:12},(_,i)=>({id:i+24, label:`Nhà ${i+24}`, birds:Math.floor(14000+Math.random()*5000), breed:'Julialai', entryDate:'10/06/2024', layStart:'10/10/2024', age:340})),
+};
+// Fix specific values for House 6 to match reference
+HOUSES.B[0] = { id:6, label:'Nhà 6', birds:18620, breed:'Maria', entryDate:'15/07/2024', layStart:'15/11/2024', age:300 };
+
+// Actual KPIs for house 6
+const ACTUAL_H6 = {
+  survival:    95.42, survivalPrev:  95.48,
+  henDay:      90.45, henDayPrev:    90.72,
+  eggWeight:   63.8,  eggWeightPrev: 63.6,
+  eggMass:     57.67, eggMassPrev:   57.80,
+  fcr:         2.08,  fcrPrev:       2.10,
+  pcr:         1.55,  pcrPrev:       1.56,
+  dirtyEgg:    1.80,  dirtyEggPrev:  1.75,
+  crackedEgg:  0.90,  crackedEggPrev:0.92,
+  saleableEgg:96.50,  saleableEggPrev:96.40,
+  feedIntake:  118.5, waterIntake:   224.0,
+  feedCostEgg: 226,   feedCostDay:   2098000,
+};
+
+// Nutrition actuals (khẩu phần hiện tại)
+const NUTRITION_ACTUAL = {
+  ME:2850, CP:16.50, Lys:0.78, Met:0.37, Ca:3.80, P:0.36,
+};
+
+// Phase survival actuals
+const PHASE_SURVIVAL_ACTUAL = {
+  'Ủm':           { actual:98.50, age:'0–42' },
+  'Hậu ủm':      { actual:97.60, age:'43–112' },
+  'Sinh trưởng': { actual:96.90, age:'113–182' },
+  'Peak':         { actual:96.20, age:'183–250' },
+  'Post Peak':    { actual:95.42, age:'251–300 (HT)' },
+};
+
+// Generate 7-day daily trend
+const genTrend = () => {
+  const dates = ['02/05','03/05','04/05','05/05','06/05','07/05','08/05'];
+  return dates.map((date, i) => ({
+    date,
+    henDay:     +(90.2 + (i*0.04) + (Math.random()-0.5)*0.3).toFixed(2),
+    eggWeight:  +(63.5 + (i*0.05) + (Math.random()-0.5)*0.2).toFixed(1),
+    dirtyEgg:   +(1.85 - (i*0.01) + (Math.random()-0.5)*0.1).toFixed(2),
+    crackedEgg: +(0.92 - (i*0.003)+ (Math.random()-0.5)*0.05).toFixed(2),
+  }));
+};
+
+// Generate actual + standard curve data (age 140–350 for current flock)
+const genActualCurve = (breed, field, currentAge) => {
+  const result = [];
+  for (let age = 140; age <= currentAge; age += 10) {
+    const std = getStd(breed, field, age);
+    // Add slight realistic variation to actual vs standard
+    const noise = (Math.sin(age*0.1)*0.8 + Math.cos(age*0.07)*0.5);
+    const actual = std ? +(std - Math.abs(noise) * (field==='henDay'?0.8:field==='eggWeight'?0.4:0.6)).toFixed(2) : null;
+    result.push({ age, actual, std: std ? +std.toFixed(2) : null });
+  }
+  return result;
+};
+
+// EGG SIZE distribution actual
+const EGG_SIZE_ACTUAL = [
+  { size:'S (<50g)',    pct:2.0,  color:'#64748b', stdPct:2.0  },
+  { size:'M (50-55g)', pct:12.0, color:'#3b82f6', stdPct:10.0 },
+  { size:'L (55-60g)', pct:28.0, color:'#22c55e', stdPct:28.0 },
+  { size:'LL (60-65g)',pct:42.0, color:'#f59e0b', stdPct:38.0 },
+  { size:'XL (65-70g)',pct:12.0, color:'#ec4899', stdPct:16.0 },
+  { size:'>70g',       pct:4.0,  color:'#8b5cf6', stdPct:6.0  },
+];
+
+// ── Design tokens ─────────────────────────────────────────────
+const C = {
+  bg:'#0f1117', card:'#161b22', border:'#21262d',
+  text:'#e6edf3', muted:'#8b949e',
+  green:'#22c55e', red:'#ef4444', amber:'#f59e0b', blue:'#3b82f6', purple:'#a855f7',
+};
+const fmtNum = (n, d=2) => n == null ? '—' : Number(n).toLocaleString('vi-VN', {maximumFractionDigits:d});
+
+// ── Helpers ───────────────────────────────────────────────────
+function deltaColor(d, reverse=false) {
+  if (Math.abs(d) < 0.001) return C.muted;
+  return (reverse ? d < 0 : d > 0) ? C.green : C.red;
+}
+function evalText(d, reverse=false, thr=0) {
+  if (Math.abs(d) <= thr) return { text:'Đạt', color:C.green };
+  return (reverse ? d < 0 : d > 0)
+    ? { text:'Tốt', color:C.green }
+    : { text:'Thiếu', color:C.red };
+}
+
+function SecTitle({ children, sub }) {
+  return (
+    <div style={{marginBottom:10}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.9,textTransform:'uppercase'}}>{children}</div>
+      {sub && <div style={{fontSize:10,color:'#4a7c4a',marginTop:2}}>{sub}</div>}
+    </div>
+  );
+}
+function ChartTip({ active, payload, label }) {
+  if (!active||!payload?.length) return null;
+  return (
+    <div style={{background:'#1e2630',border:`1px solid ${C.border}`,borderRadius:8,padding:'8px 12px',fontSize:11}}>
+      <div style={{color:C.muted,marginBottom:4,fontWeight:600}}>Tuổi: {label} ngày</div>
+      {payload.map((p,i)=>(
+        <div key={i} style={{color:p.color,marginBottom:1}}>
+          {p.name}: <b>{typeof p.value==='number'?p.value.toFixed(2):p.value}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Score donut ───────────────────────────────────────────────
+function ScoreDonut({ score }) {
+  const r = 36, circ = 2*Math.PI*r;
+  const fill = circ*(1 - score/100);
+  const color = score>=90?C.green:score>=75?C.amber:C.red;
+  return (
+    <svg width="90" height="90" viewBox="0 0 90 90">
+      <circle cx="45" cy="45" r={r} fill="none" stroke="#21262d" strokeWidth="8"/>
+      <circle cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="8"
+        strokeDasharray={circ} strokeDashoffset={fill}
+        strokeLinecap="round" transform="rotate(-90 45 45)"/>
+      <text x="45" y="47" textAnchor="middle" dominantBaseline="middle"
+        fill={color} fontSize="18" fontWeight="700">{score}</text>
+      <text x="45" y="62" textAnchor="middle" fill={C.muted} fontSize="9">/100</text>
+    </svg>
+  );
+}
+
+// ── Technical KPI card ────────────────────────────────────────
+function TechKpiCard({ label, actual, std, unit='', reverse=false, decimals=2, highlight=false }) {
+  const delta = actual - std;
+  const isGood = reverse ? delta < 0 : delta > 0;
+  const dColor = Math.abs(delta)<0.005 ? C.muted : isGood ? C.green : C.red;
+  const sign   = delta >= 0 ? '+' : '';
+  return (
+    <div style={{
+      background:C.card, border:`1px solid ${C.border}`, borderRadius:10,
+      padding:'11px 12px', display:'flex', flexDirection:'column', gap:3,
+      borderTop: highlight ? `2px solid ${C.green}` : undefined,
+    }}>
+      <div style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase'}}>{label}</div>
+      <div style={{fontSize:20,fontWeight:700,color:C.text}}>
+        {fmtNum(actual,decimals)}<span style={{fontSize:11,color:C.muted,marginLeft:2}}>{unit}</span>
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:2}}>
+        <span style={{fontSize:10,color:C.muted}}>Chuẩn: <b style={{color:C.text}}>{fmtNum(std,decimals)}{unit}</b></span>
+        <span style={{fontSize:11,fontWeight:700,color:dColor}}>{sign}{fmtNum(Math.abs(delta),decimals)}{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAIN
+// ══════════════════════════════════════════════════════════════
+function TechContent() {
+  const [zone,     setZone]    = useState('B');
+  const [houseId,  setHouseId] = useState(6);
+  const [showComp, setShowComp]= useState(false);
+
+  const house   = useMemo(() => HOUSES[zone]?.find(h=>h.id===houseId) ?? HOUSES.B[0], [zone, houseId]);
+  const breed   = house.breed;
+  const age     = house.age;
+  const phase   = getPhase(age);
+  const std     = BREED_STANDARDS[breed];
+  const nutrStd = std?.nutrition?.[phase] ?? {};
+  const hdStd   = getStd(breed, 'henDay', age) ?? 92.30;
+  const ewStd   = getStd(breed, 'eggWeight', age) ?? 64.5;
+  const emStd   = getStd(breed, 'eggMass', age) ?? 59.0;
+  const fcrStd  = getStd(breed, 'fcr', age) ?? 2.18;
+  const pcrStd  = getStd(breed, 'pcr', age) ?? 1.62;
+  const surStd  = std?.phaseSurvival?.find(p=>p.phase==='Post Peak')?.survival ?? 96.20;
+
+  const hdCurve   = useMemo(()=>genActualCurve(breed,'henDay',age),   [breed,age]);
+  const ewCurve   = useMemo(()=>genActualCurve(breed,'eggWeight',age),[breed,age]);
+  const emCurve   = useMemo(()=>genActualCurve(breed,'eggMass',age),  [breed,age]);
+  const trendData = useMemo(()=>genTrend(),[]);
+
+  const sel = { background:C.card,border:`1px solid ${C.border}`,color:C.text,
+    padding:'6px 10px',borderRadius:7,fontSize:12,outline:'none',cursor:'pointer' };
+  const greenBtn = { padding:'6px 14px',borderRadius:7,fontSize:12,fontWeight:600,
+    background:'#166534',border:'1px solid #22c55e',color:'#4ade80',cursor:'pointer' };
+  const outlineBtn = { padding:'6px 14px',borderRadius:7,fontSize:12,fontWeight:600,
+    background:'transparent',border:`1px solid ${C.border}`,color:C.muted,cursor:'pointer' };
+
+  return (
+    <div style={{color:C.text}}>
+
+      {/* ── Header ─────────────────────────────────────── */}
+      <div style={{
+        background:C.card, borderBottom:`1px solid ${C.border}`,
+        padding:'14px 24px', display:'flex', alignItems:'center', justifyContent:'space-between',
+        position:'sticky', top:0, zIndex:40,
+      }}>
+        <div>
+          <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Phân tích kỹ thuật &rsaquo; Chi tiết nhà</div>
+          <div style={{fontSize:18,fontWeight:700,color:C.text}}>PHÂN TÍCH KỸ THUẬT</div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <select value={zone} onChange={e=>{setZone(e.target.value);setHouseId(HOUSES[e.target.value][0].id)}} style={sel}>
+              <option value="B">Khu B</option>
+              <option value="C">Khu C</option>
+              <option value="D">Khu D</option>
+            </select>
+            <select value={houseId} onChange={e=>setHouseId(Number(e.target.value))} style={sel}>
+              {(HOUSES[zone]||[]).map(h=>(
+                <option key={h.id} value={h.id}>{h.label}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:'5px 10px',fontSize:12,color:C.muted}}>
+            📅 08/05/2026
+          </div>
+          <select style={sel} defaultValue="7d">
+            <option value="7d">7 ngày gần nhất</option>
+            <option value="30d">30 ngày</option>
+            <option value="all">Toàn kỳ</option>
+          </select>
+          <button style={greenBtn}>= So sánh nhà</button>
+        </div>
+      </div>
+
+      <div style={{padding:'14px 24px'}}>
+
+        {/* ── House info header ─────────────────────── */}
+        <div style={{
+          background:C.card, border:`1px solid ${C.border}`, borderRadius:12,
+          padding:'16px 20px', marginBottom:14, display:'flex', gap:20, alignItems:'center',
+        }}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:22,fontWeight:800,color:C.text,marginBottom:8}}>
+              KHU {zone} — NHÀ {houseId}
+            </div>
+            <div style={{display:'flex',gap:8,marginBottom:10,flexWrap:'wrap'}}>
+              {[
+                { label:`Giống: ${breed}`, color:'#ec4899', bg:'rgba(236,72,153,.12)' },
+                { label:`Tuổi: ${age} ngày`, color:'#22c55e', bg:'rgba(34,197,94,.12)' },
+                { label:`Giai đoạn: ${phase}`, color:'#f59e0b', bg:'rgba(245,158,11,.12)' },
+              ].map(t=>(
+                <span key={t.label} style={{
+                  fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:99,
+                  background:t.bg,color:t.color,border:`1px solid ${t.color}33`,
+                }}>{t.label}</span>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:24,flexWrap:'wrap'}}>
+              {[
+                { label:'Số gà hiện tại', val:`${fmtNum(house.birds,0)} con` },
+                { label:'Ngày vào đàn',   val:house.entryDate },
+                { label:'Ngày bắt đầu đẻ',val:house.layStart },
+              ].map(i=>(
+                <div key={i.label}>
+                  <div style={{fontSize:10,color:C.muted}}>{i.label}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.text}}>{i.val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Performance score */}
+          <div style={{textAlign:'center',background:'rgba(34,197,94,.05)',border:'1px solid rgba(34,197,94,.2)',borderRadius:12,padding:'14px 20px'}}>
+            <div style={{fontSize:10,color:C.muted,marginBottom:6,fontWeight:600,letterSpacing:.8}}>HIỆU SUẤT TỔNG HỢP</div>
+            <ScoreDonut score={87} />
+            <div style={{fontSize:11,color:C.green,fontWeight:700,marginTop:4}}>Hiệu suất tốt</div>
+            <div style={{fontSize:9,color:C.muted,marginTop:2,maxWidth:120}}>Đạt 87% so với chuẩn giống {breed}</div>
+            <div style={{fontSize:9,color:C.green,marginTop:2}}>↑ 3 điểm so với tuần trước</div>
+          </div>
+        </div>
+
+        {/* ── Technical KPI cards (9) ────────────────── */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(118px,1fr))',gap:8,marginBottom:14}}>
+          <TechKpiCard label="Tỷ lệ sống"       actual={ACTUAL_H6.survival}    std={surStd}   unit="%" reverse={false} />
+          <TechKpiCard label="Tỷ lệ đẻ (HD%)"   actual={ACTUAL_H6.henDay}      std={hdStd}    unit="%" reverse={false} />
+          <TechKpiCard label="KL Trứng"          actual={ACTUAL_H6.eggWeight}   std={ewStd}    unit="g" reverse={false} />
+          <TechKpiCard label="Egg Mass"           actual={ACTUAL_H6.eggMass}     std={emStd}    unit="g" reverse={false} />
+          <TechKpiCard label="FCR"               actual={ACTUAL_H6.fcr}         std={fcrStd}   unit=""  reverse={true}  />
+          <TechKpiCard label="PCR"               actual={ACTUAL_H6.pcr}         std={pcrStd}   unit=""  reverse={true}  />
+          <TechKpiCard label="% Trứng bẩn"       actual={ACTUAL_H6.dirtyEgg}    std={2.00}     unit="%" reverse={true} decimals={2} />
+          <TechKpiCard label="% Trứng vỡ"        actual={ACTUAL_H6.crackedEgg}  std={1.00}     unit="%" reverse={true} decimals={2} />
+          <TechKpiCard label="Trứng đạt chuẩn"   actual={ACTUAL_H6.saleableEgg} std={95.00}    unit="%" reverse={false} decimals={2} highlight />
+        </div>
+
+        {/* ── Row 1: Phase survival table + 2 charts ─── */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1.4fr 1.4fr',gap:10,marginBottom:10}}>
+
+          {/* 1. Phase survival table */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>1. Tỷ lệ sống theo giai đoạn</SecTitle>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
+              <thead>
+                <tr style={{borderBottom:`1px solid ${C.border}`}}>
+                  {['Giai đoạn','Tuổi','Thực tế','Chuẩn','Lệch'].map(h=>(
+                    <th key={h} style={{padding:'4px 5px',textAlign:'left',color:C.muted,fontSize:9.5,fontWeight:600}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(std?.phaseSurvival??[]).map(p=>{
+                  const act = PHASE_SURVIVAL_ACTUAL[p.phase];
+                  if (!act) return null;
+                  const d = act.actual - p.survival;
+                  return (
+                    <tr key={p.phase} style={{borderBottom:`1px solid ${C.border}`}}>
+                      <td style={{padding:'5px 5px',color:C.text,fontWeight:600,fontSize:11}}>{p.phase}</td>
+                      <td style={{padding:'5px 5px',color:C.muted,fontSize:10,whiteSpace:'nowrap'}}>{act.age}</td>
+                      <td style={{padding:'5px 5px',color:C.text,fontWeight:600}}>{act.actual.toFixed(2)}</td>
+                      <td style={{padding:'5px 5px',color:C.muted}}>{p.survival.toFixed(2)}</td>
+                      <td style={{padding:'5px 5px',fontWeight:700,color:deltaColor(d)}}>{d>=0?'+':''}{d.toFixed(2)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 2. Hen Day chart */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>2. Tỷ lệ đẻ (HD%) so với chuẩn</SecTitle>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={hdCurve} margin={{top:2,right:8,left:-24,bottom:0}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <XAxis dataKey="age" tick={{fill:C.muted,fontSize:9}} label={{value:'Tuổi (ngày)',position:'insideBottom',offset:-2,fill:C.muted,fontSize:9}} />
+                <YAxis domain={[40,100]} tick={{fill:C.muted,fontSize:9}} />
+                <Tooltip content={<ChartTip/>} />
+                <Legend wrapperStyle={{fontSize:9,color:C.muted}} />
+                <ReferenceLine x={age} stroke="#ffffff33" strokeDasharray="3 3" label={{value:`${age}d`,fill:C.muted,fontSize:8}} />
+                <Line type="monotone" dataKey="actual" name="Thực tế" stroke={C.green} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="std"    name={`Chuẩn ${breed}`} stroke="#a855f7" strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 3. Egg Weight chart */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>3. Khối lượng trứng (g) so với chuẩn</SecTitle>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={ewCurve} margin={{top:2,right:8,left:-24,bottom:0}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <XAxis dataKey="age" tick={{fill:C.muted,fontSize:9}} label={{value:'Tuổi (ngày)',position:'insideBottom',offset:-2,fill:C.muted,fontSize:9}} />
+                <YAxis domain={[40,72]} tick={{fill:C.muted,fontSize:9}} />
+                <Tooltip content={<ChartTip/>} />
+                <Legend wrapperStyle={{fontSize:9,color:C.muted}} />
+                <ReferenceLine x={age} stroke="#ffffff33" strokeDasharray="3 3" />
+                <Line type="monotone" dataKey="actual" name="Thực tế" stroke={C.green} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="std"    name={`Chuẩn ${breed}`} stroke="#a855f7" strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* ── Row 2: Egg Mass + Nutrition + Feed Eff ─── */}
+        <div style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',gap:10,marginBottom:10}}>
+
+          {/* 4. Egg Mass chart */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>4. Egg Mass (g/ngày) so với chuẩn</SecTitle>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={emCurve} margin={{top:2,right:8,left:-24,bottom:0}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <XAxis dataKey="age" tick={{fill:C.muted,fontSize:9}} label={{value:'Tuổi (ngày)',position:'insideBottom',offset:-2,fill:C.muted,fontSize:9}} />
+                <YAxis domain={[0,70]} tick={{fill:C.muted,fontSize:9}} />
+                <Tooltip content={<ChartTip/>} />
+                <Legend wrapperStyle={{fontSize:9,color:C.muted}} />
+                <ReferenceLine x={age} stroke="#ffffff33" strokeDasharray="3 3" />
+                <Line type="monotone" dataKey="actual" name="Thực tế" stroke={C.green} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="std"    name={`Chuẩn ${breed}`} stroke="#a855f7" strokeWidth={1.5} dot={false} strokeDasharray="5 3" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 5. Nutrition table */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle sub={`Chuẩn ${breed} — ${age} ngày (${phase})`}>5. Khẩu phần so với chuẩn</SecTitle>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
+              <thead>
+                <tr style={{borderBottom:`1px solid ${C.border}`}}>
+                  {['KPI','Đ/v','TT','Chuẩn','Lệch','Đánh giá'].map(h=>(
+                    <th key={h} style={{padding:'4px 4px',textAlign:'left',color:C.muted,fontSize:9.5,fontWeight:600}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { key:'ME',  unit:'kcal/kg', actual:NUTRITION_ACTUAL.ME,  std:nutrStd.ME??2900 },
+                  { key:'CP',  unit:'%',       actual:NUTRITION_ACTUAL.CP,  std:nutrStd.CP??17.0 },
+                  { key:'Lys', unit:'%',       actual:NUTRITION_ACTUAL.Lys, std:nutrStd.Lys??0.85 },
+                  { key:'Met', unit:'%',       actual:NUTRITION_ACTUAL.Met, std:nutrStd.Met??0.40 },
+                  { key:'Ca',  unit:'%',       actual:NUTRITION_ACTUAL.Ca,  std:nutrStd.Ca??4.0 },
+                  { key:'P',   unit:'%',       actual:NUTRITION_ACTUAL.P,   std:nutrStd.P??0.40 },
+                ].map(r=>{
+                  const d = r.actual - r.std;
+                  const ev = evalText(d, false, 0);
+                  return (
+                    <tr key={r.key} style={{borderBottom:`1px solid ${C.border}`}}>
+                      <td style={{padding:'5px 4px',fontWeight:700,color:C.text}}>{r.key}</td>
+                      <td style={{padding:'5px 4px',color:C.muted,fontSize:10}}>{r.unit}</td>
+                      <td style={{padding:'5px 4px',color:C.text,fontWeight:600}}>{r.actual}</td>
+                      <td style={{padding:'5px 4px',color:C.muted}}>{r.std}</td>
+                      <td style={{padding:'5px 4px',fontWeight:700,color:deltaColor(d)}}>{d>=0?'+':''}{d.toFixed(2)}</td>
+                      <td style={{padding:'5px 4px'}}>
+                        <span style={{fontSize:9,fontWeight:700,padding:'2px 6px',borderRadius:4,background:`${ev.color}22`,color:ev.color}}>{ev.text}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 6. Feed efficiency */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>6. Hiệu quả sử dụng thức ăn</SecTitle>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
+              <thead>
+                <tr style={{borderBottom:`1px solid ${C.border}`}}>
+                  {['Chỉ tiêu','Đ/v','TT','Chuẩn','Lệch','Đánh giá'].map(h=>(
+                    <th key={h} style={{padding:'4px 4px',textAlign:'left',color:C.muted,fontSize:9.5,fontWeight:600}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label:'Feed intake', unit:'g/con/ngày', actual:ACTUAL_H6.feedIntake, std:getStd(breed,'feedIntake',age)??122, dec:1, rev:false },
+                  { label:'FCR',         unit:'',           actual:ACTUAL_H6.fcr,        std:fcrStd,  dec:2, rev:true },
+                  { label:'PCR',         unit:'',           actual:ACTUAL_H6.pcr,        std:pcrStd,  dec:2, rev:true },
+                  { label:'Feed/egg',    unit:'đ/quả',      actual:ACTUAL_H6.feedCostEgg,std:238, dec:0, rev:true },
+                ].map(r=>{
+                  const d = r.actual - r.std;
+                  const ev = r.rev
+                    ? { text:d<0?'Tốt':'Cao', color:d<0?C.green:C.red }
+                    : { text:d>0?'Tốt':'Thiếu', color:d>0?C.green:C.amber };
+                  return (
+                    <tr key={r.label} style={{borderBottom:`1px solid ${C.border}`}}>
+                      <td style={{padding:'5px 4px',fontWeight:600,color:C.text,fontSize:10,whiteSpace:'nowrap'}}>{r.label}</td>
+                      <td style={{padding:'5px 4px',color:C.muted,fontSize:9,whiteSpace:'nowrap'}}>{r.unit}</td>
+                      <td style={{padding:'5px 4px',color:C.text,fontWeight:600}}>{fmtNum(r.actual,r.dec)}</td>
+                      <td style={{padding:'5px 4px',color:C.muted}}>{fmtNum(r.std,r.dec)}</td>
+                      <td style={{padding:'5px 4px',fontWeight:700,color:deltaColor(d,r.rev)}}>{d>=0?'+':''}{fmtNum(Math.abs(d),r.dec)}</td>
+                      <td style={{padding:'5px 4px'}}>
+                        <span style={{fontSize:9,fontWeight:700,padding:'2px 6px',borderRadius:4,background:`${ev.color}22`,color:ev.color}}>{ev.text}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── Egg Quality Section ───────────────────── */}
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'14px 16px',marginBottom:10}}>
+          <SecTitle>7. Chất lượng trứng & phân bố size</SecTitle>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1.5fr 1.5fr',gap:12}}>
+
+            {/* Mini quality KPIs */}
+            <div>
+              <div style={{fontSize:10,color:C.muted,marginBottom:8,fontWeight:600}}>KPI CHẤT LƯỢNG</div>
+              {[
+                { label:'% Trứng bẩn',       val:ACTUAL_H6.dirtyEgg,   std:'≤2.0%', clr:ACTUAL_H6.dirtyEgg<=2?C.green:C.red },
+                { label:'% Trứng vỡ',         val:ACTUAL_H6.crackedEgg, std:'≤1.0%', clr:ACTUAL_H6.crackedEgg<=1?C.green:C.red },
+                { label:'% Trứng đạt chuẩn',  val:ACTUAL_H6.saleableEgg,std:'≥95%',  clr:ACTUAL_H6.saleableEgg>=95?C.green:C.red },
+              ].map(q=>(
+                <div key={q.label} style={{marginBottom:10,padding:'8px 10px',background:C.bg,borderRadius:8,border:`1px solid ${C.border}`}}>
+                  <div style={{fontSize:10,color:C.muted,marginBottom:3}}>{q.label}</div>
+                  <div style={{fontSize:18,fontWeight:700,color:q.clr}}>{q.val.toFixed(2)}%</div>
+                  <div style={{fontSize:9,color:'#4a7c4a'}}>Chuẩn: {q.std}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* 7-day dirty/cracked trend */}
+            <div>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4,fontWeight:600}}>XU HƯỚNG 7 NGÀY</div>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={trendData} margin={{top:2,right:4,left:-28,bottom:0}}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                  <XAxis dataKey="date" tick={{fill:C.muted,fontSize:8}} />
+                  <YAxis tick={{fill:C.muted,fontSize:8}} />
+                  <Tooltip contentStyle={{background:'#1e2630',border:`1px solid ${C.border}`,borderRadius:8,fontSize:10}} />
+                  <Legend wrapperStyle={{fontSize:9}} />
+                  <Line type="monotone" dataKey="dirtyEgg"   name="Bẩn %"  stroke={C.amber} strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="crackedEgg" name="Vỡ %"   stroke={C.red}   strokeWidth={1.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Size pie */}
+            <div>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4,fontWeight:600}}>PHÂN BỐ SIZE TRỨNG (HÔM NAY)</div>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <ResponsiveContainer width="55%" height={160}>
+                  <PieChart>
+                    <Pie data={EGG_SIZE_ACTUAL} cx="50%" cy="50%" innerRadius={30} outerRadius={55}
+                      dataKey="pct" nameKey="size">
+                      {EGG_SIZE_ACTUAL.map((e,i)=><Cell key={i} fill={e.color}/>)}
+                    </Pie>
+                    <Tooltip formatter={(v)=>v+'%'} contentStyle={{background:'#1e2630',border:`1px solid ${C.border}`,borderRadius:8,fontSize:10}} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{flex:1}}>
+                  {EGG_SIZE_ACTUAL.map(s=>(
+                    <div key={s.size} style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                      <div style={{display:'flex',alignItems:'center',gap:4}}>
+                        <div style={{width:6,height:6,borderRadius:'50%',background:s.color}}/>
+                        <span style={{fontSize:9,color:C.muted}}>{s.size}</span>
+                      </div>
+                      <span style={{fontSize:10,fontWeight:700,color:C.text}}>{s.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Size comparison actual vs standard */}
+            <div>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4,fontWeight:600}}>SO SÁNH VỚI CHUẨN {breed.toUpperCase()} ({age} NGÀY)</div>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={EGG_SIZE_ACTUAL} margin={{top:2,right:4,left:-28,bottom:0}}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                  <XAxis dataKey="size" tick={{fill:C.muted,fontSize:8}} />
+                  <YAxis tick={{fill:C.muted,fontSize:8}} />
+                  <Tooltip contentStyle={{background:'#1e2630',border:`1px solid ${C.border}`,borderRadius:8,fontSize:10}} />
+                  <Legend wrapperStyle={{fontSize:9}} />
+                  <Bar dataKey="pct"    name="Thực tế (%)" fill={C.green} opacity={0.85} radius={[3,3,0,0]} />
+                  <Bar dataKey="stdPct" name="Chuẩn (%)"   fill="#a855f7" opacity={0.6}  radius={[3,3,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Alerts + Recommendations + House info ─── */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 0.7fr',gap:10}}>
+
+          {/* Alerts */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>11. Cảnh báo kỹ thuật</SecTitle>
+            {[
+              { color:C.amber, text:'Hen Day thấp hơn chuẩn Maria 1.85% ở 300 ngày tuổi.' },
+              { color:C.amber, text:'Khẩu phần thiếu ME 50 kcal/kg và CP 0.5% so với chuẩn.' },
+              { color:C.red,   text:'% Trứng bẩn tăng 0.3% so với tuần trước.' },
+              { color:C.amber, text:'Nhiệt độ trung bình cao hơn ngưỡng khuyến nghị.' },
+            ].map((a,i)=>(
+              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:8,padding:'7px 8px',background:`${a.color}11`,border:`1px solid ${a.color}33`,borderRadius:7}}>
+                <span style={{color:a.color,flexShrink:0,marginTop:1}}>⚠</span>
+                <span style={{fontSize:11,color:C.muted,lineHeight:1.5}}>{a.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Recommendations */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>12. Khuyến nghị</SecTitle>
+            {[
+              { text:'Tăng ME thêm 50 kcal/kg và CP thêm 0.5%.' },
+              { text:'Bổ sung enzyme để cải thiện tiêu hóa và hấp thu.' },
+              { text:'Kiểm tra hệ thống làm mát, giảm nhiệt độ chuồng.' },
+              { text:'Theo dõi Hen Day và Egg Weight trong 7 ngày tới.' },
+            ].map((r,i)=>(
+              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:8,padding:'7px 8px',background:'rgba(34,197,94,.06)',border:'1px solid rgba(34,197,94,.2)',borderRadius:7}}>
+                <span style={{color:C.green,flexShrink:0,marginTop:1,fontWeight:700}}>✓</span>
+                <span style={{fontSize:11,color:C.muted,lineHeight:1.5}}>{r.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Technical notes */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <SecTitle>13. Ghi chú kỹ thuật</SecTitle>
+            <div style={{fontSize:11,color:C.muted,lineHeight:1.7}}>
+              <p>Đàn đang trong giai đoạn Post Peak.</p>
+              <br/>
+              <p>Hen Day giảm nhưng nằm trong biên độ chấp nhận.</p>
+              <br/>
+              <p>Cần tối ưu khẩu phần và kiểm soát nhiệt độ để cải thiện hiệu suất.</p>
+            </div>
+          </div>
+
+          {/* House info */}
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
+            <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:10,letterSpacing:.8,textTransform:'uppercase'}}>Thông tin nhà</div>
+            {[
+              { label:'Loại chuồng',   val:'Lồng' },
+              { label:'Hệ thống cho ăn',val:'Tự động' },
+              { label:'Hệ thống uống', val:'Nipple' },
+              { label:'Mật độ',        val:`480 con/m²` },
+              { label:'Lịch chiếu sáng',val:'16L : 8D' },
+            ].map(i=>(
+              <div key={i.label} style={{display:'flex',justifyContent:'space-between',marginBottom:7,fontSize:11}}>
+                <span style={{color:C.muted}}>{i.label}</span>
+                <span style={{color:C.text,fontWeight:600}}>{i.val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+export default function TechPage() {
+  return (
+    <FarmLayout>
+      <TechContent />
+    </FarmLayout>
+  );
+}
