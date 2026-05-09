@@ -6,7 +6,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { BREED_STANDARDS, getStd, interpolate, getCurveData, getPhase } from '@/lib/standards';
+import { BREED_STANDARDS, getStd, interpolate, getCurveData, getPhase, getNutritionAtDay } from '@/lib/standards';
 
 // ══════════════════════════════════════════════════════════════
 // MOCK DATA — Nhà 6, Khu B, Maria, 300 ngày
@@ -20,32 +20,35 @@ const HOUSES = {
 HOUSES.B[0] = { id:6, label:'Nhà 6', birds:18620, breed:'Maria', entryDate:'15/07/2024', layStart:'15/11/2024', age:300 };
 
 // Actual KPIs for house 6
+// Actual KPIs — Nhà 6, Maria, tuần 42 (300 ngày)
+// Chuẩn thực tế (CSV): HD=89.22%, EW=62.28g, Via=97.04%, EM=55.57g
 const ACTUAL_H6 = {
-  survival:    95.42, survivalPrev:  95.48,
-  henDay:      90.45, henDayPrev:    90.72,
-  eggWeight:   63.8,  eggWeightPrev: 63.6,
-  eggMass:     57.67, eggMassPrev:   57.80,
-  fcr:         2.08,  fcrPrev:       2.10,
-  pcr:         1.55,  pcrPrev:       1.56,
-  dirtyEgg:    1.80,  dirtyEggPrev:  1.75,
-  crackedEgg:  0.90,  crackedEggPrev:0.92,
-  saleableEgg:96.50,  saleableEggPrev:96.40,
-  feedIntake:  118.5, waterIntake:   224.0,
-  feedCostEgg: 226,   feedCostDay:   2098000,
+  survival:    96.26, survivalPrev:  96.35,   // std 97.04%, delta -0.78%
+  henDay:      87.37, henDayPrev:    87.65,   // std 89.22%, delta -1.85%
+  eggWeight:   61.58, eggWeightPrev: 61.42,   // std 62.28g, delta -0.70g
+  eggMass:     53.80, eggMassPrev:   54.05,   // std 55.57g, delta -1.77g
+  fcr:         2.24,  fcrPrev:       2.26,    // std 2.18, delta +0.06 (kém)
+  pcr:         1.70,  pcrPrev:       1.72,    // std 1.62, delta +0.08 (kém)
+  dirtyEgg:    1.80,  dirtyEggPrev:  1.75,    // std ≤2.00% → đạt
+  crackedEgg:  0.90,  crackedEggPrev:0.92,    // std ≤1.00% → đạt
+  saleableEgg:96.50,  saleableEggPrev:96.40,  // std ≥95.0% → đạt
+  feedIntake:  119.5, waterIntake:   226.0,   // g/con/ngày
+  feedCostEgg: 238,   feedCostDay:   2244000, // đ
 };
 
 // Nutrition actuals (khẩu phần hiện tại)
+// Khẩu phần thực tế — thấp hơn chuẩn (ME std=2825, CP std=16.8)
 const NUTRITION_ACTUAL = {
-  ME:2850, CP:16.50, Lys:0.78, Met:0.37, Ca:3.80, P:0.36,
+  ME:2775, CP:16.30, Lys:0.78, Met:0.37, Ca:3.80, P:0.36,
 };
 
 // Phase survival actuals
+// Survival thực tế theo phase — so chuẩn CSV (tại cuối mỗi phase)
+// Chuẩn Maria: Sinh trưởng 99.49%, Peak 98.84%, PostPeak 97.45%
 const PHASE_SURVIVAL_ACTUAL = {
-  'Ủm':           { actual:98.50, age:'0–42' },
-  'Hậu ủm':      { actual:97.60, age:'43–112' },
-  'Sinh trưởng': { actual:96.90, age:'113–182' },
-  'Peak':         { actual:96.20, age:'183–250' },
-  'Post Peak':    { actual:95.42, age:'251–300 (HT)' },
+  'Sinh trưởng': { actual:99.10, age:'113–182' },  // std 99.49%, delta -0.39%
+  'Peak':         { actual:98.52, age:'183–250' },  // std 98.84%, delta -0.32%
+  'Post Peak':    { actual:96.26, age:'251–300 (HT)' }, // std 97.04%, delta -0.78%
 };
 
 // Generate 7-day daily trend
@@ -180,13 +183,16 @@ function TechContent() {
   const age     = house.age;
   const phase   = getPhase(age);
   const std     = BREED_STANDARDS[breed];
-  const nutrStd = std?.nutrition?.[phase] ?? {};
+  // Get nutrition standard from real CSV data via getNutritionAtDay
+  const _nutrStd = getNutritionAtDay ? getNutritionAtDay(breed, age) : null;
+  const nutrStd  = _nutrStd ?? std?.nutritionByDay?.find(p=>age>=p.minDay&&age<=p.maxDay) ?? {};
   const hdStd   = getStd(breed, 'henDay', age) ?? 92.30;
   const ewStd   = getStd(breed, 'eggWeight', age) ?? 64.5;
   const emStd   = getStd(breed, 'eggMass', age) ?? 59.0;
-  const fcrStd  = getStd(breed, 'fcr', age) ?? 2.18;
-  const pcrStd  = getStd(breed, 'pcr', age) ?? 1.62;
-  const surStd  = std?.phaseSurvival?.find(p=>p.phase==='Post Peak')?.survival ?? 96.20;
+  const fcrStd  = getStd(breed, 'fcr', age) ?? 2.18;   // estimated
+  const pcrStd  = getStd(breed, 'pcr', age) ?? 1.62;   // estimated
+  // viability from real CSV: use getStd for 'viability' field
+  const surStd  = getStd(breed, 'viability', age) ?? 97.04;
 
   const hdCurve   = useMemo(()=>genActualCurve(breed,'henDay',age),   [breed,age]);
   const ewCurve   = useMemo(()=>genActualCurve(breed,'eggWeight',age),[breed,age]);
@@ -312,7 +318,7 @@ function TechContent() {
                 </tr>
               </thead>
               <tbody>
-                {(std?.phaseSurvival??[]).map(p=>{
+                {(std?.phaseSurvival??[]).filter(p=>PHASE_SURVIVAL_ACTUAL[p.phase]).map(p=>{
                   const act = PHASE_SURVIVAL_ACTUAL[p.phase];
                   if (!act) return null;
                   const d = act.actual - p.survival;
@@ -398,12 +404,12 @@ function TechContent() {
               </thead>
               <tbody>
                 {[
-                  { key:'ME',  unit:'kcal/kg', actual:NUTRITION_ACTUAL.ME,  std:nutrStd.ME??2900 },
-                  { key:'CP',  unit:'%',       actual:NUTRITION_ACTUAL.CP,  std:nutrStd.CP??17.0 },
+                  { key:'ME',  unit:'kcal/kg', actual:NUTRITION_ACTUAL.ME,  std:nutrStd.ME??2825 },
+                  { key:'CP',  unit:'%',       actual:NUTRITION_ACTUAL.CP,  std:nutrStd.CP??16.8 },
                   { key:'Lys', unit:'%',       actual:NUTRITION_ACTUAL.Lys, std:nutrStd.Lys??0.85 },
                   { key:'Met', unit:'%',       actual:NUTRITION_ACTUAL.Met, std:nutrStd.Met??0.40 },
-                  { key:'Ca',  unit:'%',       actual:NUTRITION_ACTUAL.Ca,  std:nutrStd.Ca??4.0 },
-                  { key:'P',   unit:'%',       actual:NUTRITION_ACTUAL.P,   std:nutrStd.P??0.40 },
+                  { key:'Ca',  unit:'%',       actual:NUTRITION_ACTUAL.Ca,  std:nutrStd.Ca??4.0  },
+                  { key:'P',   unit:'%',       actual:NUTRITION_ACTUAL.P,   std:nutrStd.P??0.40  },
                 ].map(r=>{
                   const d = r.actual - r.std;
                   const ev = evalText(d, false, 0);
