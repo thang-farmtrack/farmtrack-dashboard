@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: #080c10; color: #f0f4f8; font-family: 'Inter', system-ui, sans-serif; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #080c10; }
+::-webkit-scrollbar-thumb { background: #2d3d50; border-radius: 3px; }
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+
+@layer components {
+  .input-field { @apply w-full border border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-900 text-gray-100 focus:outline-none focus:ring-1 focus:ring-yellow-500; }
+  .btn-primary { @apply bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg transition-colors; }
+  .card { @apply bg-gray-900 rounded-xl border border-gray-800 p-5; }
+}
