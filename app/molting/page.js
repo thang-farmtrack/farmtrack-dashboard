@@ -9,8 +9,8 @@ import {
 import { MOLTING_STD, interpolate } from '@/lib/standards';
 
 const C = {
-  bg:'#0f1117', card:'#161b22', border:'#21262d',
-  text:'#e6edf3', muted:'#8b949e',
+  bg:'#f8fafc', card:'#ffffff', border:'#e2e8f0',
+  text:'#1e293b', muted:'#64748b',
   green:'#22c55e', red:'#ef4444', amber:'#f59e0b', blue:'#3b82f6',
 };
 const fmtNum = (n, d=1) => n==null?'—':Number(n).toLocaleString('vi-VN',{maximumFractionDigits:d});
@@ -66,14 +66,14 @@ function MoltingContent() {
       <div style={{background:C.card,borderBottom:`1px solid ${C.border}`,padding:'14px 24px',
         display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:40}}>
         <div>
-          <div style={{fontSize:11,color:C.muted,marginBottom:2}}>Molting &rsaquo; Theo dõi ép thay lông</div>
+          <div style={{fontSize:13,color:C.muted,marginBottom:2}}>Molting &rsaquo; Theo dõi ép thay lông</div>
           <div style={{fontSize:18,fontWeight:700}}>MOLTING (ÉP THAY LÔNG)</div>
         </div>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:'5px 12px',fontSize:12,color:C.muted}}>
+          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:'5px 12px',fontSize:14,color:C.muted}}>
             Ngày hiện tại: <b style={{color:C.amber}}>Ngày tuổi {CURRENT_DAY}</b> (Process day {CURRENT_DAY-430})
           </div>
-          <div style={{background:'rgba(245,158,11,.1)',border:'1px solid #f59e0b55',borderRadius:7,padding:'5px 12px',fontSize:12,color:C.amber,fontWeight:700}}>
+          <div style={{background:'rgba(245,158,11,.1)',border:'1px solid #f59e0b55',borderRadius:7,padding:'5px 12px',fontSize:14,color:C.amber,fontWeight:700}}>
             📍 {currentPhase?.name}
           </div>
         </div>
@@ -93,15 +93,15 @@ function MoltingContent() {
                 borderTop: isActive?`3px solid ${C.amber}`: isDone?`3px solid ${C.green}`:`3px solid ${C.border}`,
               }}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-                  <div style={{fontSize:12,fontWeight:700,color:isActive?C.amber:isDone?C.green:C.muted}}>{p.name}</div>
-                  <span style={{fontSize:10,padding:'2px 7px',borderRadius:4,fontWeight:700,
+                  <div style={{fontSize:14,fontWeight:700,color:isActive?C.amber:isDone?C.green:C.muted}}>{p.name}</div>
+                  <span style={{fontSize:14,padding:'2px 7px',borderRadius:4,fontWeight:700,
                     background:isActive?'rgba(245,158,11,.15)':isDone?'rgba(34,197,94,.15)':'rgba(255,255,255,.05)',
                     color:isActive?C.amber:isDone?C.green:C.muted}}>
                     {isActive?'● Đang thực hiện':isDone?'✓ Hoàn thành':'Sắp tới'}
                   </span>
                 </div>
-                <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Process: {p.processDays} ngày</div>
-                <div style={{fontSize:10,color:C.muted,lineHeight:1.5}}>{p.desc}</div>
+                <div style={{fontSize:14,color:C.muted,marginBottom:4}}>Process: {p.processDays} ngày</div>
+                <div style={{fontSize:14,color:C.muted,lineHeight:1.5}}>{p.desc}</div>
               </div>
             );
           })}
@@ -109,7 +109,7 @@ function MoltingContent() {
 
         {/* Current status KPIs */}
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'14px 16px',marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>
             Trạng thái hiện tại — Ngày {CURRENT_DAY} (Process day {CURRENT_DAY-430})
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:10}}>
@@ -127,8 +127,8 @@ function MoltingContent() {
               return (
                 <div key={k.label} style={{background:C.bg,borderRadius:8,border:`1px solid ${C.border}`,padding:'10px 12px'}}>
                   <div style={{fontSize:9.5,color:C.muted,fontWeight:600,textTransform:'uppercase',marginBottom:4,letterSpacing:.7}}>{k.label}</div>
-                  <div style={{fontSize:19,fontWeight:700,color:C.text}}>{fmtNum(k.actual,1)}<span style={{fontSize:11,color:C.muted,marginLeft:2}}>{k.unit}</span></div>
-                  {k.std!=null && <div style={{fontSize:10,color:dClr,marginTop:3}}>Chuẩn: {fmtNum(k.std,1)}{k.unit} &nbsp;({d>=0?'+':''}{fmtNum(d,1)})</div>}
+                  <div style={{fontSize:19,fontWeight:700,color:C.text}}>{fmtNum(k.actual,1)}<span style={{fontSize:13,color:C.muted,marginLeft:2}}>{k.unit}</span></div>
+                  {k.std!=null && <div style={{fontSize:14,color:dClr,marginTop:3}}>Chuẩn: {fmtNum(k.std,1)}{k.unit} &nbsp;({d>=0?'+':''}{fmtNum(d,1)})</div>}
                 </div>
               );
             })}
@@ -139,7 +139,7 @@ function MoltingContent() {
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
           {/* BW ratio + HD chart */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'14px 16px'}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>Tỷ lệ thể trọng & Tỷ lệ đẻ</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>Tỷ lệ thể trọng & Tỷ lệ đẻ</div>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={MOLT_CHART} margin={{top:2,right:8,left:-20,bottom:0}}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
@@ -155,7 +155,7 @@ function MoltingContent() {
           </div>
           {/* Feed + Light chart */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'14px 16px'}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>Lượng cám & Chiếu sáng</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>Lượng cám & Chiếu sáng</div>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={MOLT_CHART} margin={{top:2,right:8,left:-20,bottom:0}}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
@@ -174,11 +174,11 @@ function MoltingContent() {
 
         {/* Molting standard table */}
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'14px 16px'}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase',marginBottom:10}}>
             Bảng chuẩn molting chi tiết (Process day 0–60)
           </div>
           <div style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,minWidth:700}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:13,minWidth:700}}>
               <thead>
                 <tr style={{borderBottom:`1px solid ${C.border}`}}>
                   {['Ngày tuổi','Process Day','Giai đoạn','Thể trọng %','Tỷ lệ đẻ %','Cám (g)','Sáng (h)','ME','CP %'].map(h=>(

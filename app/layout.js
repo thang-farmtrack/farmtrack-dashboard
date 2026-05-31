@@ -3,7 +3,7 @@ export const metadata = { title: 'FarmTrack Dashboard', description: '採卵鶏�
 export default function RootLayout({ children }) {
   return (
     <html lang="ja">
-      <body style={{margin:0,padding:0,background:'#080c10'}}>{children}</body>
+      <body style={{margin:0,padding:0,background:'#f8fafc'}}>{children}</body>
     </html>
   );
 }

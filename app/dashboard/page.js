@@ -72,8 +72,8 @@ const EGG_SIZE = [
 
 // ── Colors & helpers ─────────────────────────────────────────
 const C = {
-  bg:    '#0f1117', card:  '#161b22', border:'#21262d',
-  text:  '#e6edf3', muted: '#8b949e', green: '#22c55e',
+  bg:    '#f8fafc', card:  '#ffffff', border:'#e2e8f0',
+  text:  '#1e293b', muted: '#64748b', green: '#22c55e',
   red:   '#ef4444', amber: '#f59e0b', blue:  '#3b82f6',
 };
 const pct = (v, prev) => {
@@ -101,12 +101,12 @@ function KpiCard({ label, value, unit='', prev, prevUnit, deltaLabel, reverse=fa
         {label}
       </div>
       <div style={{fontSize:22, fontWeight:700, color:C.text, lineHeight:1.1}}>
-        {fmtNum(value, decimals)}<span style={{fontSize:12, fontWeight:400, color:C.muted, marginLeft:2}}>{unit}</span>
+        {fmtNum(value, decimals)}<span style={{fontSize:14, fontWeight:400, color:C.muted, marginLeft:2}}>{unit}</span>
       </div>
       <div style={{fontSize:10.5, color:C.muted}}>
         {yday}: <span style={{color:C.text}}>{fmtNum(prev, decimals)}{prevUnit??unit}</span>
       </div>
-      <div style={{fontSize:11, fontWeight:600, color}}>
+      <div style={{fontSize:13, fontWeight:600, color}}>
         {arrow} {sign}{fmtNum(Math.abs(d), decimals)}{deltaLabel??unit}
       </div>
     </div>
@@ -131,7 +131,7 @@ function ChartTip({ active, payload, label }) {
 // ── Section title ─────────────────────────────────────────────
 function SecTitle({ children }) {
   return (
-    <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:1,textTransform:'uppercase',marginBottom:10}}>
+    <div style={{fontSize:13,fontWeight:700,color:C.muted,letterSpacing:1,textTransform:'uppercase',marginBottom:10}}>
       {children}
     </div>
   );
@@ -163,16 +163,16 @@ function DashboardContent() {
   const [period, setPeriod] = useState('7d');
 
   const sel = { background:C.card, border:`1px solid ${C.border}`, color:C.text,
-    padding:'6px 10px', borderRadius:7, fontSize:12, outline:'none', cursor:'pointer' };
+    padding:'6px 10px', borderRadius:7, fontSize:14, outline:'none', cursor:'pointer' };
   const btn = (active) => ({
-    padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer',
+    padding:'5px 12px', borderRadius:6, fontSize:13, fontWeight:600, cursor:'pointer',
     background: active ? '#166534' : 'transparent',
     border: active ? '1px solid #22c55e' : `1px solid ${C.border}`,
     color: active ? '#4ade80' : C.muted,
     transition:'all .15s',
   });
   const greenBtn = {
-    padding:'6px 14px', borderRadius:7, fontSize:12, fontWeight:600,
+    padding:'6px 14px', borderRadius:7, fontSize:14, fontWeight:600,
     background:'#166534', border:'1px solid #22c55e', color:'#4ade80', cursor:'pointer',
   };
 
@@ -187,12 +187,12 @@ function DashboardContent() {
       }}>
         <div>
           <div style={{fontSize:18,fontWeight:700,color:C.text}}>{t('farm_overview')}</div>
-          <div style={{fontSize:11,color:C.muted,marginTop:2}}>{t('last_updated')} 08:30 – {TODAY} &nbsp;
+          <div style={{fontSize:13,color:C.muted,marginTop:2}}>{t('last_updated')} 08:30 – {TODAY} &nbsp;
             <span style={{color:C.green,cursor:'pointer'}}>↺</span>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:'5px 10px',fontSize:12,color:C.muted,display:'flex',alignItems:'center',gap:6}}>
+          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:'5px 10px',fontSize:14,color:C.muted,display:'flex',alignItems:'center',gap:6}}>
             📅 {TODAY}
           </div>
           {[[t('btn_today'),'1d'],[t('btn_7d'),'7d'],[t('btn_30d'),'30d']].map(([p,k]) => {
@@ -210,7 +210,7 @@ function DashboardContent() {
           padding:'12px 16px',display:'flex',alignItems:'center',gap:16,marginBottom:16,
         }}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:11,color:C.muted,whiteSpace:'nowrap'}}>{t('select_zone')}</span>
+            <span style={{fontSize:13,color:C.muted,whiteSpace:'nowrap'}}>{t('select_zone')}</span>
             <select value={zone} onChange={e=>setZone(e.target.value)} style={sel}>
               <option value="all">{allZone}</option>
               <option value="B">{zL('B')} ({hL(6)}–{hL(15)})</option>
@@ -219,7 +219,7 @@ function DashboardContent() {
             </select>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:11,color:C.muted,whiteSpace:'nowrap'}}>{t('select_house')}</span>
+            <span style={{fontSize:13,color:C.muted,whiteSpace:'nowrap'}}>{t('select_house')}</span>
             <select value={house} onChange={e=>setHouse(e.target.value)} style={sel}>
               <option value="all">{allHouse}</option>
               {Array.from({length:30},(_,i)=>i+6).map(n=>(
@@ -228,7 +228,7 @@ function DashboardContent() {
             </select>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:11,color:C.muted,whiteSpace:'nowrap'}}>{t('select_breed')}</span>
+            <span style={{fontSize:13,color:C.muted,whiteSpace:'nowrap'}}>{t('select_breed')}</span>
             <select value={breed} onChange={e=>setBreed(e.target.value)} style={sel}>
               <option value="all">{t('all_breeds')}</option>
               <option value="Maria">Maria</option>
@@ -236,7 +236,7 @@ function DashboardContent() {
               <option value="Julialai">Julialai</option>
             </select>
           </div>
-          <div style={{marginLeft:'auto',fontSize:11,color:C.muted}}>
+          <div style={{marginLeft:'auto',fontSize:13,color:C.muted}}>
             {t('total_flock')} <span style={{color:C.green,fontWeight:700,fontSize:13}}>{fmtNum(MOCK_FARM.totalBirds,0)}</span> {t('unit_birds')}
           </div>
         </div>
@@ -263,12 +263,12 @@ function DashboardContent() {
             <SecTitle>{t('trend_7d')}</SecTitle>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={TREND_7D} margin={{top:2,right:8,left:-20,bottom:0}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="date" tick={{fill:C.muted,fontSize:10}} />
                 <YAxis yAxisId="pct" domain={[88,96]} tick={{fill:C.muted,fontSize:10}} />
                 <YAxis yAxisId="g"   orientation="right" domain={[100,220]} tick={{fill:C.muted,fontSize:10}} />
                 <Tooltip content={<ChartTip/>} />
-                <Legend wrapperStyle={{fontSize:10,color:C.muted}} />
+                <Legend wrapperStyle={{fontSize:14,color:C.muted}} />
                 <Line yAxisId="pct" type="monotone" dataKey="henDay"  name={t('line_henDay')} stroke={C.green} strokeWidth={2} dot={false} />
                 <Line yAxisId="g"   type="monotone" dataKey="feed"    name={t('line_feed')}       stroke={C.amber} strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                 <Line yAxisId="g"   type="monotone" dataKey="water"   name={t('line_water')}     stroke={C.blue}  strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
@@ -296,7 +296,7 @@ function DashboardContent() {
                     <div style={{width:8,height:8,borderRadius:'50%',background:b.color,flexShrink:0}}/>
                     <span style={{color:C.muted}}>{b.name}</span>
                   </div>
-                  <span style={{fontSize:11,fontWeight:600,color:C.text}}>{b.pct}%</span>
+                  <span style={{fontSize:13,fontWeight:600,color:C.text}}>{b.pct}%</span>
                 </div>
               ))}
             </div>
@@ -321,7 +321,7 @@ function DashboardContent() {
                     <div style={{width:8,height:8,borderRadius:'50%',background:z.color,flexShrink:0}}/>
                     <span style={{color:C.muted}}>{zL(z.zk)}</span>
                   </div>
-                  <span style={{fontSize:11,fontWeight:600,color:C.text}}>{z.pct}%</span>
+                  <span style={{fontSize:13,fontWeight:600,color:C.text}}>{z.pct}%</span>
                 </div>
               ))}
             </div>
@@ -338,7 +338,7 @@ function DashboardContent() {
               <thead>
                 <tr style={{borderBottom:`1px solid ${C.border}`}}>
                   {[t('th_zone'),t('th_houses'),t('th_birds'),'HD%',t('th_mort'),t('th_temp'),t('th_feed'),t('th_water'),t('th_trend')].map(h=>(
-                    <th key={h} style={{padding:'5px 6px',textAlign:'left',color:C.muted,fontWeight:600,fontSize:10,whiteSpace:'nowrap'}}>{h}</th>
+                    <th key={h} style={{padding:'5px 6px',textAlign:'left',color:C.muted,fontWeight:600,fontSize:14,whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -347,7 +347,7 @@ function DashboardContent() {
                   <tr key={z.zone} style={{borderBottom:`1px solid ${C.border}`,background:i%2===0?'transparent':'rgba(255,255,255,.02)'}}>
                     <td style={{padding:'7px 6px'}}>
                       <div style={{fontWeight:700,color:C.text}}>{zL(z.zk)}</div>
-                      <div style={{fontSize:10,color:C.muted}}>{hL(z.rangeFrom)}–{hL(z.rangeTo)}</div>
+                      <div style={{fontSize:14,color:C.muted}}>{hL(z.rangeFrom)}–{hL(z.rangeTo)}</div>
                     </td>
                     <td style={{padding:'7px 6px',color:C.muted}}>{z.houses}</td>
                     <td style={{padding:'7px 6px',color:C.text,fontWeight:600}}>{fmtNum(z.birds,0)}</td>
@@ -380,7 +380,7 @@ function DashboardContent() {
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'14px 16px'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
               <SecTitle>{t('alert_title')}</SecTitle>
-              <a href="/canh-bao" style={{fontSize:11,color:C.blue,textDecoration:'none'}}>{t('alert_all')}</a>
+              <a href="/canh-bao" style={{fontSize:13,color:C.blue,textDecoration:'none'}}>{t('alert_all')}</a>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:7}}>
               {alertsLocalized.map((a,i) => (
@@ -395,8 +395,8 @@ function DashboardContent() {
                     <span style={{fontSize:9,color:C.muted,whiteSpace:'nowrap'}}>{a.time}</span>
                   </div>
                   <div>
-                    <div style={{fontSize:12,fontWeight:600,color:alertColor[a.level],marginBottom:2}}>{a.msg}</div>
-                    <div style={{fontSize:11,color:C.muted,lineHeight:1.4}}>{a.sub}</div>
+                    <div style={{fontSize:14,fontWeight:600,color:alertColor[a.level],marginBottom:2}}>{a.msg}</div>
+                    <div style={{fontSize:13,color:C.muted,lineHeight:1.4}}>{a.sub}</div>
                   </div>
                   <div style={{marginLeft:'auto',flexShrink:0}}>
                     <span style={{
@@ -428,10 +428,10 @@ function DashboardContent() {
               const clr = Math.abs(d)<0.001?C.muted:good?C.green:C.red;
               return (
                 <div key={row.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:`1px solid ${C.border}`}}>
-                  <span style={{fontSize:12,color:C.muted}}>{row.label}</span>
+                  <span style={{fontSize:14,color:C.muted}}>{row.label}</span>
                   <div style={{textAlign:'right'}}>
                     <div style={{fontSize:15,fontWeight:700,color:C.text}}>{fmtNum(row.val,row.dec)}{row.unit}</div>
-                    <div style={{fontSize:10,color:clr}}>{d>0?'+':''}{fmtNum(d,row.dec)}{row.unit} {t('vs_yesterday')}</div>
+                    <div style={{fontSize:14,color:clr}}>{d>0?'+':''}{fmtNum(d,row.dec)}{row.unit} {t('vs_yesterday')}</div>
                   </div>
                 </div>
               );
@@ -452,12 +452,12 @@ function DashboardContent() {
               return (
                 <div key={row.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:`1px solid ${C.border}`}}>
                   <div>
-                    <div style={{fontSize:12,color:C.muted}}>{row.label}</div>
-                    <div style={{fontSize:10,color:'#4a7c4a'}}>{t('std_label')} {row.std}</div>
+                    <div style={{fontSize:14,color:C.muted}}>{row.label}</div>
+                    <div style={{fontSize:14,color:'#4a7c4a'}}>{t('std_label')} {row.std}</div>
                   </div>
                   <div style={{textAlign:'right'}}>
                     <div style={{fontSize:15,fontWeight:700,color:C.text}}>{fmtNum(row.val,row.dec)}{row.unit}</div>
-                    <div style={{fontSize:10,color:clr}}>{d>0?'+':''}{fmtNum(d,row.dec)}{row.unit}</div>
+                    <div style={{fontSize:14,color:clr}}>{d>0?'+':''}{fmtNum(d,row.dec)}{row.unit}</div>
                   </div>
                 </div>
               );
@@ -482,13 +482,13 @@ function DashboardContent() {
                   <div key={s.size} style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
                     <div style={{display:'flex',alignItems:'center',gap:6}}>
                       <div style={{width:6,height:6,borderRadius:'50%',background:s.color,flexShrink:0}}/>
-                      <span style={{fontSize:10,color:C.muted,whiteSpace:'nowrap'}}>{s.size}</span>
+                      <span style={{fontSize:14,color:C.muted,whiteSpace:'nowrap'}}>{s.size}</span>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:6}}>
-                      <div style={{width:60,height:5,background:'#21262d',borderRadius:3,overflow:'hidden'}}>
+                      <div style={{width:60,height:5,background:'#e2e8f0',borderRadius:3,overflow:'hidden'}}>
                         <div style={{width:`${s.pct/50*100}%`,height:'100%',background:s.color,borderRadius:3}}/>
                       </div>
-                      <span style={{fontSize:10,fontWeight:700,color:C.text,minWidth:28,textAlign:'right'}}>{s.pct}%</span>
+                      <span style={{fontSize:14,fontWeight:700,color:C.text,minWidth:28,textAlign:'right'}}>{s.pct}%</span>
                     </div>
                   </div>
                 ))}

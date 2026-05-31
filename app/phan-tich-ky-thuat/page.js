@@ -89,8 +89,8 @@ const EGG_SIZE_ACTUAL = [
 
 // ── Design tokens ─────────────────────────────────────────────
 const C = {
-  bg:'#0f1117', card:'#161b22', border:'#21262d',
-  text:'#e6edf3', muted:'#8b949e',
+  bg:'#f8fafc', card:'#ffffff', border:'#e2e8f0',
+  text:'#1e293b', muted:'#64748b',
   green:'#22c55e', red:'#ef4444', amber:'#f59e0b', blue:'#3b82f6', purple:'#a855f7',
 };
 const fmtNum = (n, d=2) => n == null ? '—' : Number(n).toLocaleString('vi-VN', {maximumFractionDigits:d});
@@ -113,16 +113,16 @@ function evalText(d, reverse=false, thr=0, t_=null) {
 function SecTitle({ children, sub }) {
   return (
     <div style={{marginBottom:10}}>
-      <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:.9,textTransform:'uppercase'}}>{children}</div>
-      {sub && <div style={{fontSize:10,color:'#4a7c4a',marginTop:2}}>{sub}</div>}
+      <div style={{fontSize:13,fontWeight:700,color:C.muted,letterSpacing:.9,textTransform:'uppercase'}}>{children}</div>
+      {sub && <div style={{fontSize:14,color:'#4a7c4a',marginTop:2}}>{sub}</div>}
     </div>
   );
 }
-function ChartTip({ active, payload, label }) {
+function ChartTip({ active, payload, label, ageUnit='' }) {
   if (!active||!payload?.length) return null;
   return (
     <div style={{background:'#1e2630',border:`1px solid ${C.border}`,borderRadius:8,padding:'8px 12px',fontSize:11}}>
-      <div style={{color:C.muted,marginBottom:4,fontWeight:600}}>{label} {t('age_unit')}</div>
+      <div style={{color:C.muted,marginBottom:4,fontWeight:600}}>{label} {ageUnit}</div>
       {payload.map((p,i)=>(
         <div key={i} style={{color:p.color,marginBottom:1}}>
           {p.name}: <b>{typeof p.value==='number'?p.value.toFixed(2):p.value}</b>
@@ -139,7 +139,7 @@ function ScoreDonut({ score }) {
   const color = score>=90?C.green:score>=75?C.amber:C.red;
   return (
     <svg width="90" height="90" viewBox="0 0 90 90">
-      <circle cx="45" cy="45" r={r} fill="none" stroke="#21262d" strokeWidth="8"/>
+      <circle cx="45" cy="45" r={r} fill="none" stroke="#e2e8f0" strokeWidth="8"/>
       <circle cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="8"
         strokeDasharray={circ} strokeDashoffset={fill}
         strokeLinecap="round" transform="rotate(-90 45 45)"/>
@@ -164,11 +164,11 @@ function TechKpiCard({ label, actual, std, unit='', reverse=false, decimals=2, h
     }}>
       <div style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:.8,textTransform:'uppercase'}}>{label}</div>
       <div style={{fontSize:20,fontWeight:700,color:C.text}}>
-        {fmtNum(actual,decimals)}<span style={{fontSize:11,color:C.muted,marginLeft:2}}>{unit}</span>
+        {fmtNum(actual,decimals)}<span style={{fontSize:13,color:C.muted,marginLeft:2}}>{unit}</span>
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:2}}>
-        <span style={{fontSize:10,color:C.muted}}>{stdLabel} <b style={{color:C.text}}>{fmtNum(std,decimals)}{unit}</b></span>
-        <span style={{fontSize:11,fontWeight:700,color:dColor}}>{sign}{fmtNum(Math.abs(delta),decimals)}{unit}</span>
+        <span style={{fontSize:14,color:C.muted}}>{stdLabel} <b style={{color:C.text}}>{fmtNum(std,decimals)}{unit}</b></span>
+        <span style={{fontSize:13,fontWeight:700,color:dColor}}>{sign}{fmtNum(Math.abs(delta),decimals)}{unit}</span>
       </div>
     </div>
   );
@@ -218,10 +218,10 @@ function TechContent() {
   const trendData = useMemo(()=>genTrend(),[]);
 
   const sel = { background:C.card,border:`1px solid ${C.border}`,color:C.text,
-    padding:'6px 10px',borderRadius:7,fontSize:12,outline:'none',cursor:'pointer' };
-  const greenBtn = { padding:'6px 14px',borderRadius:7,fontSize:12,fontWeight:600,
+    padding:'6px 10px',borderRadius:7,fontSize:14,outline:'none',cursor:'pointer' };
+  const greenBtn = { padding:'6px 14px',borderRadius:7,fontSize:14,fontWeight:600,
     background:'#166534',border:'1px solid #22c55e',color:'#4ade80',cursor:'pointer' };
-  const outlineBtn = { padding:'6px 14px',borderRadius:7,fontSize:12,fontWeight:600,
+  const outlineBtn = { padding:'6px 14px',borderRadius:7,fontSize:14,fontWeight:600,
     background:'transparent',border:`1px solid ${C.border}`,color:C.muted,cursor:'pointer' };
 
   return (
@@ -234,7 +234,7 @@ function TechContent() {
         position:'sticky', top:0, zIndex:40,
       }}>
         <div>
-          <div style={{fontSize:11,color:C.muted,marginBottom:2}}>{t('tech_breadcrumb')}</div>
+          <div style={{fontSize:13,color:C.muted,marginBottom:2}}>{t('tech_breadcrumb')}</div>
           <div style={{fontSize:18,fontWeight:700,color:C.text}}>{t('tech_title')}</div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -250,7 +250,7 @@ function TechContent() {
               ))}
             </select>
           </div>
-          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:'5px 10px',fontSize:12,color:C.muted}}>
+          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:7,padding:'5px 10px',fontSize:14,color:C.muted}}>
             📅 08/05/2026
           </div>
           <select style={sel} defaultValue="7d">
@@ -280,7 +280,7 @@ function TechContent() {
                 { label:`${t('phase_label')} ${phase}`, color:'#f59e0b', bg:'rgba(245,158,11,.12)' },
               ].map(t=>(
                 <span key={t.label} style={{
-                  fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:99,
+                  fontSize:13,fontWeight:700,padding:'3px 10px',borderRadius:99,
                   background:t.bg,color:t.color,border:`1px solid ${t.color}33`,
                 }}>{t.label}</span>
               ))}
@@ -292,7 +292,7 @@ function TechContent() {
                 { label:t('lay_start'),   val:house.layStart },
               ].map(i=>(
                 <div key={i.label}>
-                  <div style={{fontSize:10,color:C.muted}}>{i.label}</div>
+                  <div style={{fontSize:14,color:C.muted}}>{i.label}</div>
                   <div style={{fontSize:13,fontWeight:600,color:C.text}}>{i.val}</div>
                 </div>
               ))}
@@ -300,9 +300,9 @@ function TechContent() {
           </div>
           {/* Performance score */}
           <div style={{textAlign:'center',background:'rgba(34,197,94,.05)',border:'1px solid rgba(34,197,94,.2)',borderRadius:12,padding:'14px 20px'}}>
-            <div style={{fontSize:10,color:C.muted,marginBottom:6,fontWeight:600,letterSpacing:.8}}>{t('perf_title')}</div>
+            <div style={{fontSize:14,color:C.muted,marginBottom:6,fontWeight:600,letterSpacing:.8}}>{t('perf_title')}</div>
             <ScoreDonut score={87} />
-            <div style={{fontSize:11,color:C.green,fontWeight:700,marginTop:4}}>{t('perf_good')}</div>
+            <div style={{fontSize:13,color:C.green,fontWeight:700,marginTop:4}}>{t('perf_good')}</div>
             <div style={{fontSize:9,color:C.muted,marginTop:2,maxWidth:120}}>{t('perf_vs_breed')} 87% {t('perf_vs_week')} {breed}</div>
             <div style={{fontSize:9,color:C.green,marginTop:2}}>{t('perf_up_week')}</div>
           </div>
@@ -343,7 +343,7 @@ function TechContent() {
                   return (
                     <tr key={p.phase} style={{borderBottom:`1px solid ${C.border}`}}>
                       <td style={{padding:'5px 5px',color:C.text,fontWeight:600,fontSize:11}}>{p.phase}</td>
-                      <td style={{padding:'5px 5px',color:C.muted,fontSize:10,whiteSpace:'nowrap'}}>{act.age}</td>
+                      <td style={{padding:'5px 5px',color:C.muted,fontSize:14,whiteSpace:'nowrap'}}>{act.age}</td>
                       <td style={{padding:'5px 5px',color:C.text,fontWeight:600}}>{act.actual.toFixed(2)}</td>
                       <td style={{padding:'5px 5px',color:C.muted}}>{p.survival.toFixed(2)}</td>
                       <td style={{padding:'5px 5px',fontWeight:700,color:deltaColor(d)}}>{d>=0?'+':''}{d.toFixed(2)}</td>
@@ -367,14 +367,14 @@ function TechContent() {
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={comboCurve} margin={{top:4,right:40,left:-20,bottom:0}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="age" tick={{fill:C.muted,fontSize:9}}
                   label={{value:t('age_axis'),position:'insideBottomRight',offset:-4,fill:C.muted,fontSize:9}} />
                 <YAxis yAxisId="pct" domain={[80,100]} tick={{fill:C.muted,fontSize:9}}
                   label={{value:'%',angle:-90,position:'insideLeft',offset:28,fill:C.muted,fontSize:9}} />
                 <YAxis yAxisId="g" orientation="right" domain={[52,72]} tick={{fill:C.muted,fontSize:9}}
                   label={{value:'g',angle:90,position:'insideRight',offset:-10,fill:C.muted,fontSize:9}} />
-                <Tooltip content={<ChartTip/>} />
+                <Tooltip content={(props) => <ChartTip {...props} ageUnit={t('age_unit')} />} />
                 <ReferenceLine yAxisId="pct" x={age} stroke="#ffffff22" strokeDasharray="3 3"
                   label={{value:`${age}d`,fill:C.muted,fontSize:8}} />
                 {/* Tỷ lệ sống */}
@@ -399,10 +399,10 @@ function TechContent() {
             <SecTitle>{t('sec_em')}</SecTitle>
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={emCurve} margin={{top:2,right:8,left:-24,bottom:0}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="age" tick={{fill:C.muted,fontSize:9}} label={{value:t('age_axis'),position:'insideBottom',offset:-2,fill:C.muted,fontSize:9}} />
                 <YAxis domain={[0,70]} tick={{fill:C.muted,fontSize:9}} />
-                <Tooltip content={<ChartTip/>} />
+                <Tooltip content={(props) => <ChartTip {...props} ageUnit={t('age_unit')} />} />
                 <Legend wrapperStyle={{fontSize:9,color:C.muted}} />
                 <ReferenceLine x={age} stroke="#ffffff33" strokeDasharray="3 3" />
                 <Line type="monotone" dataKey="actual" name={t('ph_actual')} stroke={C.green} strokeWidth={2} dot={false} />
@@ -474,7 +474,7 @@ function TechContent() {
                     : { text:d>0?t('eval_good'):t('eval_lack'), color:d>0?C.green:C.amber };
                   return (
                     <tr key={r.label} style={{borderBottom:`1px solid ${C.border}`}}>
-                      <td style={{padding:'5px 4px',fontWeight:600,color:C.text,fontSize:10,whiteSpace:'nowrap'}}>{r.label}</td>
+                      <td style={{padding:'5px 4px',fontWeight:600,color:C.text,fontSize:14,whiteSpace:'nowrap'}}>{r.label}</td>
                       <td style={{padding:'5px 4px',color:C.muted,fontSize:9,whiteSpace:'nowrap'}}>{r.unit}</td>
                       <td style={{padding:'5px 4px',color:C.text,fontWeight:600}}>{fmtNum(r.actual,r.dec)}</td>
                       <td style={{padding:'5px 4px',color:C.muted}}>{fmtNum(r.std,r.dec)}</td>
@@ -497,14 +497,14 @@ function TechContent() {
 
             {/* Mini quality KPIs */}
             <div>
-              <div style={{fontSize:10,color:C.muted,marginBottom:8,fontWeight:600}}>{t('qual_kpi')}</div>
+              <div style={{fontSize:14,color:C.muted,marginBottom:8,fontWeight:600}}>{t('qual_kpi')}</div>
               {[
                 { label:t('tech_dirty'),       val:ACTUAL_H6.dirtyEgg,   std:'≤2.0%', clr:ACTUAL_H6.dirtyEgg<=2?C.green:C.red },
                 { label:t('tech_cracked'),         val:ACTUAL_H6.crackedEgg, std:'≤1.0%', clr:ACTUAL_H6.crackedEgg<=1?C.green:C.red },
                 { label:t('tech_saleable'),  val:ACTUAL_H6.saleableEgg,std:'≥95%',  clr:ACTUAL_H6.saleableEgg>=95?C.green:C.red },
               ].map(q=>(
                 <div key={q.label} style={{marginBottom:10,padding:'8px 10px',background:C.bg,borderRadius:8,border:`1px solid ${C.border}`}}>
-                  <div style={{fontSize:10,color:C.muted,marginBottom:3}}>{q.label}</div>
+                  <div style={{fontSize:14,color:C.muted,marginBottom:3}}>{q.label}</div>
                   <div style={{fontSize:18,fontWeight:700,color:q.clr}}>{q.val.toFixed(2)}%</div>
                   <div style={{fontSize:9,color:'#4a7c4a'}}>{t('std_label')} {q.std}</div>
                 </div>
@@ -513,10 +513,10 @@ function TechContent() {
 
             {/* 7-day dirty/cracked trend */}
             <div>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4,fontWeight:600}}>{t('trend_7d_cap')}</div>
+              <div style={{fontSize:14,color:C.muted,marginBottom:4,fontWeight:600}}>{t('trend_7d_cap')}</div>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={trendData} margin={{top:2,right:4,left:-28,bottom:0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="date" tick={{fill:C.muted,fontSize:8}} />
                   <YAxis tick={{fill:C.muted,fontSize:8}} />
                   <Tooltip contentStyle={{background:'#1e2630',border:`1px solid ${C.border}`,borderRadius:8,fontSize:10}} />
@@ -529,7 +529,7 @@ function TechContent() {
 
             {/* Size pie */}
             <div>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4,fontWeight:600}}>{t('size_today')}</div>
+              <div style={{fontSize:14,color:C.muted,marginBottom:4,fontWeight:600}}>{t('size_today')}</div>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <ResponsiveContainer width="55%" height={160}>
                   <PieChart>
@@ -547,7 +547,7 @@ function TechContent() {
                         <div style={{width:6,height:6,borderRadius:'50%',background:s.color}}/>
                         <span style={{fontSize:9,color:C.muted}}>{s.size}</span>
                       </div>
-                      <span style={{fontSize:10,fontWeight:700,color:C.text}}>{s.pct}%</span>
+                      <span style={{fontSize:14,fontWeight:700,color:C.text}}>{s.pct}%</span>
                     </div>
                   ))}
                 </div>
@@ -556,10 +556,10 @@ function TechContent() {
 
             {/* Size comparison actual vs standard */}
             <div>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4,fontWeight:600}}>{t('size_cmp')} {breed.toUpperCase()} ({age} {t('age_unit')})</div>
+              <div style={{fontSize:14,color:C.muted,marginBottom:4,fontWeight:600}}>{t('size_cmp')} {breed.toUpperCase()} ({age} {t('age_unit')})</div>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={EGG_SIZE_ACTUAL} margin={{top:2,right:4,left:-28,bottom:0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="size" tick={{fill:C.muted,fontSize:8}} />
                   <YAxis tick={{fill:C.muted,fontSize:8}} />
                   <Tooltip contentStyle={{background:'#1e2630',border:`1px solid ${C.border}`,borderRadius:8,fontSize:10}} />
@@ -586,7 +586,7 @@ function TechContent() {
             ].map((a,i)=>(
               <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:8,padding:'7px 8px',background:`${a.color}11`,border:`1px solid ${a.color}33`,borderRadius:7}}>
                 <span style={{color:a.color,flexShrink:0,marginTop:1}}>⚠</span>
-                <span style={{fontSize:11,color:C.muted,lineHeight:1.5}}>{a.text}</span>
+                <span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>{a.text}</span>
               </div>
             ))}
           </div>
@@ -602,7 +602,7 @@ function TechContent() {
             ].map((r,i)=>(
               <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:8,padding:'7px 8px',background:'rgba(34,197,94,.06)',border:'1px solid rgba(34,197,94,.2)',borderRadius:7}}>
                 <span style={{color:C.green,flexShrink:0,marginTop:1,fontWeight:700}}>✓</span>
-                <span style={{fontSize:11,color:C.muted,lineHeight:1.5}}>{r.text}</span>
+                <span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>{r.text}</span>
               </div>
             ))}
           </div>
@@ -610,7 +610,7 @@ function TechContent() {
           {/* Technical notes */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
             <SecTitle>{t('sec_notes')}</SecTitle>
-            <div style={{fontSize:11,color:C.muted,lineHeight:1.7}}>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.7}}>
               <p>{t('note1')}</p>
               <br/>
               <p>{t('note2')}</p>
@@ -621,7 +621,7 @@ function TechContent() {
 
           {/* House info */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px'}}>
-            <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:10,letterSpacing:.8,textTransform:'uppercase'}}>{t('sec_house_info')}</div>
+            <div style={{fontSize:14,color:C.muted,fontWeight:700,marginBottom:10,letterSpacing:.8,textTransform:'uppercase'}}>{t('sec_house_info')}</div>
             {[
               { label:t('cage_type'),  val:t('cage_val') },
               { label:t('feed_sys'),   val:t('feed_sys_val') },

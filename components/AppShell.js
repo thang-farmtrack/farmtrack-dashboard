@@ -12,6 +12,20 @@ const AppCtx = createContext({
 });
 export const useApp = () => useContext(AppCtx);
 
+// Light theme CSS variables injected globally
+const CSS_VARS = `
+  :root {
+    --sf:  #ffffff;
+    --bd:  #e2e8f0;
+    --bd2: #cbd5e1;
+    --tx:  #1e293b;
+    --tx2: #475569;
+    --mu:  #64748b;
+    --acc: #d97706;
+    --bg:  #f8fafc;
+  }
+`;
+
 const NAV = [
   { href: '/dashboard', icon: '📊', labelVi: 'Tổng quan',    labelJa: 'ダッシュボード' },
   { href: '/flocks',    icon: '🐔', labelVi: 'Đàn gà',       labelJa: '鶏群管理' },
@@ -40,18 +54,22 @@ export default function AppShell({ children }) {
   function handleLogout() { clearAuth(); router.replace('/login'); }
 
   if (!ready) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#080c10' }}>
-      <div style={{ textAlign:'center' }}>
-        <div style={{ fontSize:40, marginBottom:12 }}>🐔</div>
-        <p style={{ color:'#607080', fontSize:13 }}>Loading...</p>
+    <>
+      <style>{CSS_VARS}</style>
+      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc' }}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🐔</div>
+          <p style={{ color:'#94a3b8', fontSize:14 }}>Loading...</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 
   const label = (item) => lang === 'ja' ? item.labelJa : item.labelVi;
 
   return (
     <AppCtx.Provider value={{ lang, setLang, user, filters, setFilters }}>
+      <style>{CSS_VARS}</style>
       <div style={{ display:'flex', minHeight:'100vh', position:'relative', zIndex:1 }}>
         {/* Sidebar */}
         <aside style={{
@@ -60,6 +78,7 @@ export default function AppShell({ children }) {
           borderRight: '1px solid var(--bd)',
           display: 'flex', flexDirection: 'column',
           position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
+          boxShadow: '1px 0 4px rgba(0,0,0,.06)',
         }}>
           {/* Logo */}
           <div style={{ padding:'20px 16px 14px', borderBottom:'1px solid var(--bd)' }}>
@@ -77,13 +96,13 @@ export default function AppShell({ children }) {
                 <Link key={item.href} href={item.href} style={{
                   display:'flex', alignItems:'center', gap:10,
                   padding:'9px 12px', borderRadius:8,
-                  fontSize:12, fontWeight: active ? 500 : 400,
-                  color: active ? '#fff' : 'var(--tx2)',
-                  background: active ? 'rgba(245,166,35,.15)' : 'transparent',
-                  border: active ? '1px solid rgba(245,166,35,.3)' : '1px solid transparent',
+                  fontSize:13, fontWeight: active ? 600 : 400,
+                  color: active ? '#92400e' : 'var(--tx2)',
+                  background: active ? 'rgba(217,119,6,.1)' : 'transparent',
+                  border: active ? '1px solid rgba(217,119,6,.3)' : '1px solid transparent',
                   textDecoration:'none', transition:'all .15s',
                 }}>
-                  <span style={{ fontSize:14 }}>{item.icon}</span>
+                  <span style={{ fontSize:15 }}>{item.icon}</span>
                   {label(item)}
                 </Link>
               );
@@ -94,26 +113,26 @@ export default function AppShell({ children }) {
           <div style={{ padding:'12px 14px', borderTop:'1px solid var(--bd)' }}>
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
               <div style={{
-                width:32, height:32, borderRadius:'50%',
-                background:'rgba(245,166,35,.2)', border:'1.5px solid rgba(245,166,35,.4)',
+                width:34, height:34, borderRadius:'50%',
+                background:'rgba(217,119,6,.15)', border:'1.5px solid rgba(217,119,6,.4)',
                 display:'flex', alignItems:'center', justifyContent:'center',
-                color:'var(--acc)', fontWeight:700, fontSize:12, flexShrink:0,
+                color:'var(--acc)', fontWeight:700, fontSize:13, flexShrink:0,
               }}>{user?.name?.[0]?.toUpperCase() ?? 'U'}</div>
               <div>
-                <div style={{ color:'var(--tx)', fontSize:12, fontWeight:500 }}>{user?.name}</div>
-                <div style={{ color:'var(--mu)', fontSize:10 }}>
+                <div style={{ color:'var(--tx)', fontSize:13, fontWeight:600 }}>{user?.name}</div>
+                <div style={{ color:'var(--mu)', fontSize:11 }}>
                   {user?.is_admin ? (lang==='ja'?'管理者':'Quản trị') : (lang==='ja'?'作業員':'Nhân viên')}
                 </div>
               </div>
             </div>
             <div style={{ display:'flex', gap:6 }}>
               <button onClick={() => setLang(lang==='ja'?'vi':'ja')} style={{
-                flex:1, padding:'5px 0', fontSize:10, fontFamily:'monospace', fontWeight:700,
+                flex:1, padding:'6px 0', fontSize:11, fontFamily:'monospace', fontWeight:700,
                 background:'transparent', border:'1px solid var(--bd2)',
                 color:'var(--tx2)', borderRadius:6, cursor:'pointer',
               }}>{lang==='ja'?'JP → VI':'VI → JP'}</button>
               <button onClick={handleLogout} style={{
-                flex:1, padding:'5px 0', fontSize:10,
+                flex:1, padding:'6px 0', fontSize:11,
                 background:'transparent', border:'1px solid var(--bd2)',
                 color:'var(--mu)', borderRadius:6, cursor:'pointer',
               }}>{lang==='ja'?'ログアウト':'Đăng xuất'}</button>
@@ -122,7 +141,7 @@ export default function AppShell({ children }) {
         </aside>
 
         {/* Main */}
-        <main style={{ flex:1, minWidth:0, overflowX:'hidden' }}>
+        <main style={{ flex:1, minWidth:0, overflowX:'hidden', background:'var(--bg)', padding:'24px' }}>
           {children}
         </main>
       </div>
