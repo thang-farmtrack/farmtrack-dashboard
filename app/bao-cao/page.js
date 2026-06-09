@@ -178,7 +178,7 @@ function SectionTitle({ icon, title }) {
 // ══════════════════════════════════════════════════════════════
 // MAIN
 // ══════════════════════════════════════════════════════════════
-export default function BaoCaoPage() {
+function BaoCaoContent() {
   const { lang } = useFarm();
   const isJP = lang === 'ja';
 
@@ -241,7 +241,6 @@ export default function BaoCaoPage() {
   const printDate = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
 
   return (
-    <FarmLayout>
       <style>{`
         @media print {
           body { background:#fff !important; color:#000 !important; }
@@ -474,6 +473,13 @@ export default function BaoCaoPage() {
         </div>
 
       </div>
+  );
+}
+
+export default function BaoCaoPage() {
+  return (
+    <FarmLayout>
+      <BaoCaoContent />
     </FarmLayout>
   );
 }
