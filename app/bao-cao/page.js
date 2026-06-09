@@ -145,7 +145,7 @@ const dlt  = (curr, prev, inv=false) => {
 };
 
 // ── Shared sub-components ─────────────────────────────────────
-function KpiCard({ icon, label, value, bench, delta, status }) {
+function KpiCard({ icon, label, value, bench, delta, status, isJP }) {
   const sc = { good:C.green, warn:C.amber, bad:C.red, neutral:C.blue };
   const sb = { good:C.greenDim, warn:C.amberDim, bad:C.redDim, neutral:C.blueDim };
   return (
@@ -154,13 +154,13 @@ function KpiCard({ icon, label, value, bench, delta, status }) {
         <div>
           <div style={{ fontSize:13, color:C.muted, marginBottom:6 }}>{icon} {label}</div>
           <div style={{ fontSize:30, fontWeight:700, color:sc[status] }}>{value}</div>
-          <div style={{ fontSize:13, color:C.muted, marginTop:4 }}>Chuẩn: {bench}</div>
+          <div style={{ fontSize:13, color:C.muted, marginTop:4 }}>{isJP?'基準':'Chuẩn'}: {bench}</div>
         </div>
         <div style={{ textAlign:'right' }}>
           <div style={{ fontSize:14, fontWeight:600, color:delta.color, background:`${delta.color}22`, borderRadius:6, padding:'3px 8px' }}>
             {delta.val}
           </div>
-          <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>vs kỳ trước</div>
+          <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>{isJP?'前期比':'vs kỳ trước'}</div>
         </div>
       </div>
     </div>
@@ -216,13 +216,16 @@ export default function BaoCaoPage() {
   const houseOptions = ZONE_CONFIG[selZone].houses;
 
   // ── Chart data ───────────────────────────────────────────────
+  const keyMort = isJP ? '死亡率 (‰)' : 'Chết (‰)';
+  const keyFeed = isJP ? '飼料 (g)' : 'Cám (g)';
+  const keyHD   = isJP ? '産卵率 (%)' : 'Hen-Day (%)';
   const chartData = useMemo(() => activeData.map(d => ({
     name: d.label,
-    'Hen-Day (%)': d.henDay,
+    [keyHD]: d.henDay,
     'FCR': d.fcr,
-    'Chết (‰)': +(d.mort*1000).toFixed(2),
-    'Cám (g)': d.feed,
-  })), [activeData]);
+    [keyMort]: +(d.mort*1000).toFixed(2),
+    [keyFeed]: d.feed,
+  })), [activeData, isJP, keyMort, keyFeed, keyHD]);
 
   // ── KPI cards ────────────────────────────────────────────────
   const kpis = [
@@ -375,7 +378,7 @@ export default function BaoCaoPage() {
 
         {/* ── KPI Cards ──────────────────────────────────────── */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:18 }}>
-          {kpis.map((k,i) => <KpiCard key={i} {...k} />)}
+          {kpis.map((k,i) => <KpiCard key={i} {...k} isJP={isJP} />)}
         </div>
 
         {/* ── Charts 2×2 ─────────────────────────────────────── */}
@@ -390,8 +393,8 @@ export default function BaoCaoPage() {
                 <YAxis domain={[87,96]} tick={{fill:C.muted,fontSize:11}}/>
                 <Tooltip contentStyle={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,color:'#1e293b'}}/>
                 <ReferenceLine y={BENCH.henDay} stroke={C.amber} strokeDasharray="4 2"
-                  label={{value:'Chuẩn',fill:C.amber,fontSize:10,position:'right'}}/>
-                <Line type="monotone" dataKey="Hen-Day (%)" stroke={C.green} strokeWidth={2.5} dot={{fill:C.green,r:4}}/>
+                  label={{value:isJP?'基準':'Chuẩn',fill:C.amber,fontSize:10,position:'right'}}/>
+                <Line type="monotone" dataKey={keyHD} stroke={C.green} strokeWidth={2.5} dot={{fill:C.green,r:4}}/>
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -406,7 +409,7 @@ export default function BaoCaoPage() {
                 <YAxis domain={[2.0,2.2]} tick={{fill:C.muted,fontSize:11}}/>
                 <Tooltip contentStyle={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,color:'#1e293b'}}/>
                 <ReferenceLine y={BENCH.fcr} stroke={C.amber} strokeDasharray="4 2"
-                  label={{value:'Chuẩn',fill:C.amber,fontSize:10,position:'right'}}/>
+                  label={{value:isJP?'基準':'Chuẩn',fill:C.amber,fontSize:10,position:'right'}}/>
                 <Line type="monotone" dataKey="FCR" stroke={C.blue} strokeWidth={2.5} dot={{fill:C.blue,r:4}}/>
               </LineChart>
             </ResponsiveContainer>
@@ -421,7 +424,7 @@ export default function BaoCaoPage() {
                 <XAxis dataKey="name" tick={{fill:C.muted,fontSize:11}}/>
                 <YAxis domain={[108,120]} tick={{fill:C.muted,fontSize:11}}/>
                 <Tooltip contentStyle={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,color:'#1e293b'}}/>
-                <Bar dataKey="Cám (g)" fill={C.amber} radius={[4,4,0,0]}/>
+                <Bar dataKey={keyFeed} fill={C.amber} radius={[4,4,0,0]}/>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -435,10 +438,10 @@ export default function BaoCaoPage() {
                 <XAxis dataKey="name" tick={{fill:C.muted,fontSize:11}}/>
                 <YAxis domain={[0.04,0.07]} tickFormatter={v=>(v*1000).toFixed(0)+'‰'} tick={{fill:C.muted,fontSize:11}}/>
                 <Tooltip contentStyle={{background:'#fff',border:'1px solid #e2e8f0',borderRadius:8,color:'#1e293b'}}
-                  formatter={v=>[(v*1000).toFixed(2)+'‰','Tỉ lệ chết']}/>
+                  formatter={v=>[(v*1000).toFixed(2)+'‰', isJP?'死亡率':'Tỉ lệ chết']}/>
                 <ReferenceLine y={BENCH.mort} stroke={C.red} strokeDasharray="4 2"
-                  label={{value:'Chuẩn',fill:C.red,fontSize:10}}/>
-                <Line type="monotone" dataKey="Chết (‰)" stroke={C.red} strokeWidth={2.5} dot={{fill:C.red,r:4}}/>
+                  label={{value:isJP?'基準':'Chuẩn',fill:C.red,fontSize:10}}/>
+                <Line type="monotone" dataKey={keyMort} stroke={C.red} strokeWidth={2.5} dot={{fill:C.red,r:4}}/>
               </LineChart>
             </ResponsiveContainer>
           </div>
