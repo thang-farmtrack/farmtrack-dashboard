@@ -240,7 +240,7 @@ function BaoCaoContent() {
   const now = new Date();
   const printDate = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
 
-  return (
+  return (<>
       <style>{`
         @media print {
           body { background:#fff !important; color:#000 !important; }
@@ -473,7 +473,7 @@ function BaoCaoContent() {
         </div>
 
       </div>
-  );
+  </>);
 }
 
 export default function BaoCaoPage() {
